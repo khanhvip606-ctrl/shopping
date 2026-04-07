@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - BAPhone</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f7fb;
+      color: #111827;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 24px));
+      margin: 30px auto;
+    }
+
+    .header {
+      background: #111111;
+      color: white;
+      padding: 22px;
+      border-radius: 18px;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+    }
+
+    .header p {
+      margin: 0;
+      color: #d1d5db;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .submit-btn {
+      background: #ffd400;
+      color: #111111;
+    }
+
+    .delete-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .message {
+      margin-top: 14px;
+      font-weight: 700;
+    }
+
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .product-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .product-item img {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: #f3f4f6;
+    }
+
+    .product-item h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .price {
+      color: #dc2626;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      color: #4b5563;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Trang Admin - BAPhone</h1>
+      <p>Thêm sản phẩm, tải ảnh lên và hiển thị ngay ngoài frontend</p>
+    </div>
+
+    <div class="card">
+      <h2>Thêm sản phẩm mới</h2>
+
+      <form id="productForm" enctype="multipart/form-data">
+        <div class="grid">
+          <div>
+            <label>Tên sản phẩm</label>
+            <input type="text" name="name" required />
+          </div>
+
+          <div>
+            <label>Giá sản phẩm</label>
+            <input type="text" name="price" placeholder="Ví dụ: 35000000 hoặc 35 triệu" required />
+          </div>
+
+          <div class="full">
+            <label>Mô tả</label>
+            <textarea name="description" placeholder="Nhập mô tả sản phẩm..."></textarea>
+          </div>
+
+          <div class="full">
+            <label>Ảnh sản phẩm</label>
+            <input type="file" name="image" accept="image/*" />
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button type="submit" class="submit-btn">Thêm sản phẩm</button>
+        </div>
+
+        <div id="message" class="message"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Danh sách sản phẩm</h2>
+      <div id="productList" class="product-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:5000/api/products";
+    const form = document.getElementById("productForm");
+    const message = document.getElementById("message");
+    const productList = document.getElementById("productList");
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(API_URL);
+        const products = await res.json();
+
+        productList.innerHTML = "";
+
+        products.forEach((product) => {
+          const div = document.createElement("div");
+          div.className = "product-item";
+
+          div.innerHTML = `
+            <img src="${product.image}" alt="${product.name}" />
+            <h3>${product.name}</h3>
+            <div class="price">${Number(product.price || 0).toLocaleString("vi-VN")}đ</div>
+            <div class="desc">${product.description || "Chưa có mô tả"}</div>
+            <button class="delete-btn" onclick="deleteProduct('${product._id}')">Xóa sản phẩm</button>
+          `;
+
+          productList.appendChild(div);
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          message.style.color = "red";
+          message.textContent = data.error || "Thêm sản phẩm thất bại";
+          return;
+        }
+
+        message.style.color = "green";
+        message.textContent = "Thêm sản phẩm thành công";
+        form.reset();
+        loadProducts();
+      } catch (error) {
+        message.style.color = "red";
+        message.textContent = "Có lỗi xảy ra";
+      }
+    });
+
+    async function deleteProduct(id) {
+      const ok = confirm("Bạn có chắc muốn xóa sản phẩm này không?");
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`${API_URL}/${id}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Xóa thất bại");
+          return;
+        }
+
+        loadProducts();
+      } catch (error) {
+        alert("Có lỗi xảy ra khi xóa");
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
