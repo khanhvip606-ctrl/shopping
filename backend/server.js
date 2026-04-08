@@ -18,64 +18,51 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// tạo folder uploads
+// ===== UPLOAD =====
 const uploadPath = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath);
 }
-
-// load ảnh
 app.use("/uploads", express.static(uploadPath));
 
-// connect MongoDB
+// ===== CONNECT DB =====
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err));
 
-// model
+// ===== MODEL =====
 const Product = require("./models/Product");
 
-// upload config
+// ===== MULTER =====
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+  destination: (req, file, cb) => cb(null, uploadPath),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
 });
-
 const upload = multer({ storage });
 
-// 👉 FIX ROOT (QUAN TRỌNG)
-app.get("/", (req, res) => {
-  res.redirect("/admin");
-});
-
-// mở trang admin
+// ===== ADMIN =====
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// GET products
+// ===== API =====
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find()
       .select("-__v")
       .sort({ _id: -1 });
-
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST product
 app.post("/api/products", upload.single("image"), async (req, res) => {
   try {
     if (!req.body.name || !req.body.price) {
-      return res.status(400).json({ error: "Thiếu tên hoặc giá sản phẩm" });
+      return res.status(400).json({ error: "Thiếu tên hoặc giá" });
     }
 
     let priceInput = (req.body.price + "")
@@ -92,7 +79,7 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
     }
 
     if (isNaN(priceInput)) {
-      return res.status(400).json({ error: "Giá sản phẩm không hợp lệ" });
+      return res.status(400).json({ error: "Giá không hợp lệ" });
     }
 
     const imageUrl = req.file
@@ -109,12 +96,10 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
     await product.save();
     res.json(product);
   } catch (err) {
-    console.log("POST error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE product
 app.delete("/api/products/:id", async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id);
@@ -124,7 +109,14 @@ app.delete("/api/products/:id", async (req, res) => {
   }
 });
 
-// chạy server
+// ===== 👉 SERVE REACT BUILD (QUAN TRỌNG NHẤT) =====
+app.use(express.static(path.join(__dirname, "build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
