@@ -12,7 +12,7 @@ const fs = require("fs");
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000; // ✅ FIX PORT
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -48,6 +48,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// 👉 FIX ROOT (QUAN TRỌNG)
+app.get("/", (req, res) => {
+  res.redirect("/admin");
+});
+
 // mở trang admin
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
@@ -57,7 +62,7 @@ app.get("/admin", (req, res) => {
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find()
-      .select("-__v") // ✅ ẩn __v
+      .select("-__v")
       .sort({ _id: -1 });
 
     res.json(products);
@@ -90,7 +95,6 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Giá sản phẩm không hợp lệ" });
     }
 
-    // ✅ FIX IMAGE URL (quan trọng)
     const imageUrl = req.file
       ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
       : "https://via.placeholder.com/300";
@@ -105,7 +109,7 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
     await product.save();
     res.json(product);
   } catch (err) {
-    console.log("POST /api/products error:", err);
+    console.log("POST error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -122,5 +126,5 @@ app.delete("/api/products/:id", async (req, res) => {
 
 // chạy server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`); // ✅ FIX LOG
+  console.log(`Server running on port ${PORT}`);
 });
