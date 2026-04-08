@@ -13,7 +13,7 @@ function ProductCard({ product, onAddToCart }) {
     }
 
     // 👉 domain backend deploy của bạn
-    const baseUrl = "https://shopping-byuv.onrender.com";
+    const baseUrl = "https://shopping-l23o.onrender.com";
 
     if (image.startsWith("/uploads")) {
       return `${baseUrl}${image}`;
